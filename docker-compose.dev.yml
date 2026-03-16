@@ -1,0 +1,63 @@
+version: '3.8'
+
+# Development: Run only infrastructure (Neo4j, n8n, Redis)
+# Next.js runs locally with `pnpm dev`
+
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: ethd-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/etherealdimension
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: ethd-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=etherealdimension
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - GENERIC_TIMEZONE=America/New_York
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      neo4j:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: ethd-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  n8n_data:
+  redis_data:

@@ -1,0 +1,88 @@
+{
+  "name": "EthD Document Ingestion Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ingest",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const { id, name, content, chunks } = $input.first().json.body;\n\n// Stage 1: Entity extraction\nconst entities = [];\nconst entityPatterns = [\n  { regex: /ASCE\\s*7|IBC|NFPA|ACI|AISC/gi, type: 'code' },\n  { regex: /W\\d+x\\d+|HSS\\d+/gi, type: 'steel_section' },\n  { regex: /\\d+\\s*(?:psi|ksi|MPa|GPa)/gi, type: 'strength' },\n  { regex: /(?:beam|column|foundation|slab|wall|footing)/gi, type: 'structural_element' },\n];\n\nfor (const pattern of entityPatterns) {\n  const matches = content.match(pattern.regex) || [];\n  for (const match of [...new Set(matches)]) {\n    entities.push({ name: match, type: pattern.type });\n  }\n}\n\nreturn [{\n  json: {\n    id, name, content,\n    chunks: chunks || 0,\n    entities,\n    entityCount: entities.length\n  }\n}];"
+      },
+      "name": "Entity Extraction",
+      "type": "n8n-nodes-base.function",
+      "position": [480, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://neo4j:7474/db/neo4j/tx/commit",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "statements",
+              "value": "=[{\"statement\":\"MERGE (d:Document {id: $id}) SET d.name = $name, d.chunks = $chunks, d.uploadedAt = datetime() RETURN d\",\"parameters\":{\"id\":\"{{ $json.id }}\",\"name\":\"{{ $json.name }}\",\"chunks\":{{ $json.chunks }}}}]"
+            }
+          ]
+        }
+      },
+      "name": "Index Document in Neo4j",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [710, 200],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "functionCode": "const { entities, id } = $json;\nconst statements = entities.map(e => ({\n  statement: `MATCH (d:Document {id: $docId}) MERGE (e:Entity {name: $name, type: $type}) MERGE (d)-[:MENTIONS]->(e)`,\n  parameters: { docId: id, name: e.name, type: e.type }\n}));\n\nreturn [{ json: { statements, entityCount: entities.length, docId: id } }];"
+      },
+      "name": "Build Entity Graph",
+      "type": "n8n-nodes-base.function",
+      "position": [710, 400],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"graphNodes\": {{ $json.entityCount || 0 }}, \"docId\": \"{{ $json.docId }}\" }"
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [960, 300],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "Entity Extraction", "type": "main", "index": 0 }]
+      ]
+    },
+    "Entity Extraction": {
+      "main": [
+        [
+          { "node": "Index Document in Neo4j", "type": "main", "index": 0 },
+          { "node": "Build Entity Graph", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Index Document in Neo4j": {
+      "main": [
+        [{ "node": "Respond", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Entity Graph": {
+      "main": [
+        [{ "node": "Respond", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

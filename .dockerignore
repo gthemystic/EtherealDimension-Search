@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env
+.env.local
+.env.*.local
+*.md
+n8n-workflows
+scripts
+.DS_Store
+.vercel
+neo4j_data
+n8n_data
+redis_data
