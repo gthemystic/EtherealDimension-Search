@@ -236,9 +236,9 @@ export function HomeSearch() {
               <div className="text-center animate-fade-in">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/40">
                   <Sparkles className="h-3 w-3 text-yellow-400/60" />
-                  Multi-Agent RAG • Neo4j • n8n Orchestration
+                  Multi-Agent Intelligence • Knowledge Graph • Adaptive OCR
                 </div>
-                <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-3 bg-gradient-to-b from-white via-white/90 to-white/40 bg-clip-text text-transparent leading-[1.1] tracking-tight">
+                <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-3 bg-gradient-to-b from-white via-white to-white/80 bg-clip-text text-transparent leading-[1.1] tracking-tight">
                   Search across
                 </h2>
                 <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-[1.1] tracking-tight">
