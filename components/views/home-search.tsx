@@ -11,6 +11,8 @@ import {
   ArrowLeft,
   ExternalLink,
   Clock,
+  Upload,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -20,7 +22,7 @@ import { GlowBorder } from "@/components/ui/glow-border"
 import { AgentStatus, type AgentStep } from "@/components/ui/agent-status"
 import { ConfidenceBar } from "@/components/shared/confidence-bar"
 import { MarkdownContent } from "@/components/shared/markdown-content"
-import { trackSearch } from "@/lib/activity-tracker"
+import { trackSearch, trackUpload } from "@/lib/activity-tracker"
 import { getItem, setItem, STORAGE_KEYS } from "@/lib/local-storage"
 import { cn } from "@/lib/utils"
 import { LottieAnimation } from "@/components/ui/lottie-animation"
@@ -65,7 +67,9 @@ export function HomeSearch() {
   const [copied, setCopied] = useState<string | null>(null)
   const [recentSearches, setRecentSearches] = useState<SearchResult[]>([])
   const [agents, setAgents] = useState<AgentStep[]>([])
+  const [uploadingFile, setUploadingFile] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const heroInputRef = useRef<HTMLInputElement>(null)
   const resultsEndRef = useRef<HTMLDivElement>(null)
 
@@ -99,21 +103,23 @@ export function HomeSearch() {
 
     // Show agent pipeline
     setAgents([
-      { name: "Context", status: "running" },
-      { name: "Perplexity", status: "idle" },
-      { name: "Citations", status: "idle" },
-      { name: "Rank", status: "idle" },
+      { name: "Context Detection", status: "running" },
+      { name: "Knowledge Retrieval", status: "idle" },
+      { name: "Citation Analysis", status: "idle" },
+      { name: "Confidence Scoring", status: "idle" },
     ])
 
     try {
       // Simulate context detection phase
-      await new Promise((r) => setTimeout(r, 300))
+      await new Promise((r) => setTimeout(r, 800))
       setAgents((prev) => [
-        { ...prev[0], status: "complete", durationMs: 120 },
+        { ...prev[0], status: "complete", durationMs: 340 },
         { ...prev[1], status: "running" },
         prev[2],
         prev[3],
       ])
+
+      await new Promise((r) => setTimeout(r, 600))
 
       const res = await fetch("/api/search", {
         method: "POST",
@@ -135,10 +141,12 @@ export function HomeSearch() {
 
       setAgents((prev) => [
         prev[0],
-        { ...prev[1], status: "complete", durationMs: 800 },
+        { ...prev[1], status: "complete", durationMs: 1240 },
         { ...prev[2], status: "running" },
         prev[3],
       ])
+
+      await new Promise((r) => setTimeout(r, 400))
 
       while (true) {
         const { done, value } = await reader.read()
@@ -222,6 +230,41 @@ export function HomeSearch() {
     setTimeout(() => setCopied(null), 2000)
   }
 
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ""
+
+    setUploadingFile(file.name)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await fetch("/api/process", { method: "POST", body: formData })
+      const data = await res.json()
+      if (data.success) {
+        trackUpload(file.name)
+        // Save to library
+        const library = getItem<Array<{ id: string; name: string; type: string; size: number; summary: string; uploadedAt: string; chunks: number }>>(STORAGE_KEYS.LIBRARY, [])
+        library.push({
+          id: `${Date.now()}`,
+          name: file.name,
+          type: file.type || "application/pdf",
+          size: file.size,
+          summary: data.summary || "",
+          uploadedAt: new Date().toISOString(),
+          chunks: data.chunks || 0,
+        })
+        setItem(STORAGE_KEYS.LIBRARY, library)
+        // Auto-search the document
+        handleSearch(`Summarize the key findings from ${file.name}`)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setUploadingFile(null)
+    }
+  }, [handleSearch])
+
   const showHero = results.length === 0 && !isSearching
 
   return (
@@ -272,6 +315,21 @@ export function HomeSearch() {
                     </Button>
                   </div>
                 </GlowBorder>
+                <div className="flex items-center justify-center gap-3 mt-3">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!!uploadingFile}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white/40 hover:text-white/60 hover:bg-white/[0.06] transition-all"
+                  >
+                    {uploadingFile ? (
+                      <><FileText className="h-3.5 w-3.5 animate-pulse" />Processing {uploadingFile}...</>
+                    ) : (
+                      <><Upload className="h-3.5 w-3.5" />Upload a document</>
+                    )}
+                  </button>
+                  <span className="text-[10px] text-white/15">PDF, DOCX, TXT</span>
+                </div>
+                <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc,.md,.png,.jpg,.jpeg" onChange={handleFileUpload} className="hidden" />
               </div>
 
               {/* Example queries */}

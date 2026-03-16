@@ -155,18 +155,24 @@ Try specific queries like:
 export function createMockSearchStream(query: string): ReadableStream {
   const data = pickSearchResult(query)
   const encoder = new TextEncoder()
-  const chunkSize = 30
+  const chunkSize = 12
 
   return new ReadableStream({
     async start(controller) {
-      // Split answer into chunks and stream as deltas
+      // Initial delay — simulates agent pipeline startup
+      await new Promise((r) => setTimeout(r, 1800))
+
+      // Split answer into small chunks and stream as deltas with realistic pacing
       for (let i = 0; i < data.answer.length; i += chunkSize) {
         const slice = data.answer.slice(i, i + chunkSize)
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: 'delta', content: slice })}\n\n`)
         )
-        // Small delay between chunks for streaming effect
-        await new Promise((r) => setTimeout(r, 15))
+        // Vary delay: slower at start, faster in middle, slight pauses at newlines
+        const isNewline = slice.includes('\n')
+        const progress = i / data.answer.length
+        const baseDelay = progress < 0.1 ? 80 : progress < 0.3 ? 50 : 30
+        await new Promise((r) => setTimeout(r, isNewline ? baseDelay + 120 : baseDelay))
       }
 
       // Send done event

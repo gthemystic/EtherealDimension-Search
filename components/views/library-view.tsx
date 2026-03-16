@@ -9,10 +9,16 @@ import {
   Trash2,
   Upload,
   ExternalLink,
+  BookOpen,
+  Hash,
+  Link2,
+  Eye,
+  ChevronRight,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/shared/glass-card"
+import { MarkdownContent } from "@/components/shared/markdown-content"
 import { getItem, setItem, STORAGE_KEYS } from "@/lib/local-storage"
 import { cn } from "@/lib/utils"
 import { LottieAnimation } from "@/components/ui/lottie-animation"
@@ -26,6 +32,10 @@ type LibraryDoc = {
   summary: string
   uploadedAt: string
   chunks: number
+  pages?: number
+  urlsEnriched?: number
+  visionAnalyses?: number
+  status?: string
 }
 
 function formatSize(bytes: number) {
@@ -182,24 +192,87 @@ export function LibraryView() {
       {selectedDoc && (() => {
         const doc = filtered.find((d) => d.id === selectedDoc)
         if (!doc) return null
+        const isPdf = doc.name.toLowerCase().endsWith('.pdf')
         return (
-          <GlassCard className="p-4 border-blue-500/20 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-semibold text-white/80">{doc.name}</h3>
-                <p className="text-xs text-white/20 mt-0.5">Uploaded {new Date(doc.uploadedAt).toLocaleString()}</p>
+          <GlassCard className="border-blue-500/20 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-start justify-between p-4 pb-3 border-b border-white/[0.04]">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-500/20">
+                  <FileText className="h-4 w-4 text-blue-400" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-white/80 truncate">{doc.name}</h3>
+                  <p className="text-[10px] text-white/20 mt-0.5">
+                    Uploaded {new Date(doc.uploadedAt).toLocaleDateString()} • {formatSize(doc.size)}
+                  </p>
+                </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedDoc(null)} className="text-xs text-white/30">Close</Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedDoc(null)} className="text-xs text-white/30 shrink-0">Close</Button>
             </div>
-            {doc.summary && (
-              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] text-xs text-white/40 leading-relaxed">
-                {doc.summary}
+
+            {/* Stats row */}
+            <div className="flex items-center gap-4 px-4 py-3 border-b border-white/[0.04] bg-white/[0.01]">
+              {doc.pages && (
+                <div className="flex items-center gap-1.5 text-xs text-white/30">
+                  <BookOpen className="h-3 w-3" />
+                  <span>{doc.pages} pages</span>
+                </div>
+              )}
+              {doc.chunks > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-white/30">
+                  <Hash className="h-3 w-3" />
+                  <span>{doc.chunks} chunks</span>
+                </div>
+              )}
+              {doc.urlsEnriched !== undefined && doc.urlsEnriched > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-white/30">
+                  <Link2 className="h-3 w-3" />
+                  <span>{doc.urlsEnriched} URLs enriched</span>
+                </div>
+              )}
+              {doc.visionAnalyses !== undefined && doc.visionAnalyses > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-white/30">
+                  <Eye className="h-3 w-3" />
+                  <span>{doc.visionAnalyses} vision analyses</span>
+                </div>
+              )}
+              {doc.status && (
+                <Badge variant="secondary" className="text-[10px] ml-auto">{doc.status}</Badge>
+              )}
+            </div>
+
+            {/* PDF Preview */}
+            {isPdf && (
+              <div className="border-b border-white/[0.04]">
+                <iframe
+                  src={`/api/pdf-preview?name=${encodeURIComponent(doc.name)}`}
+                  className="w-full h-[400px] bg-white/[0.02]"
+                  title={`Preview: ${doc.name}`}
+                  onError={(e) => { (e.target as HTMLIFrameElement).style.display = 'none' }}
+                />
+                <div className="flex items-center justify-center py-6 text-center bg-white/[0.01]">
+                  <div>
+                    <FileText className="h-8 w-8 text-white/10 mx-auto mb-2" />
+                    <p className="text-xs text-white/20">PDF preview available when document is uploaded</p>
+                    <p className="text-[10px] text-white/10 mt-1">Upload the actual file to enable inline rendering</p>
+                  </div>
+                </div>
               </div>
             )}
-            <div className="flex gap-3 mt-3 text-xs text-white/20">
-              <span>{formatSize(doc.size)}</span>
-              {doc.chunks > 0 && <span>{doc.chunks} chunks</span>}
-            </div>
+
+            {/* Summary */}
+            {doc.summary && (
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ChevronRight className="h-3 w-3 text-blue-400" />
+                  <span className="text-[11px] font-medium text-white/40 uppercase tracking-wider">AI Summary</span>
+                </div>
+                <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] text-xs text-white/50 leading-relaxed">
+                  <MarkdownContent text={doc.summary} />
+                </div>
+              </div>
+            )}
           </GlassCard>
         )
       })()}
