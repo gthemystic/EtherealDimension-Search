@@ -274,47 +274,42 @@ export function HomeSearch() {
       <div className="relative z-10 flex flex-col flex-1 min-h-0">
         <div className="flex-1 overflow-y-auto min-h-0 p-4 pb-4 md:p-6">
           {showHero ? (
-            <div className="flex flex-col items-center justify-center gap-8 pt-12 md:pt-20 max-w-4xl mx-auto">
+            <div className="flex flex-col items-center justify-center gap-6 pt-8 md:pt-16 max-w-5xl mx-auto">
               {/* Hero */}
               <div className="text-center animate-fade-in">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/40">
-                  <Sparkles className="h-3 w-3 text-yellow-400/60" />
-                  Multi-Agent Intelligence • Knowledge Graph • Adaptive OCR
-                </div>
-                <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-3 bg-gradient-to-b from-white via-white to-white/80 bg-clip-text text-transparent leading-[1.1] tracking-tight">
-                  Search across
+                <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-[1.1] tracking-tight">
+                  Intelligent Engineering Search
                 </h2>
-                <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-[1.1] tracking-tight">
-                  <MorphingText texts={heroTexts} interval={2500} />
-                </h2>
-                <p className="mt-4 text-sm md:text-base text-white/30 max-w-lg mx-auto">
-                  Intelligent engineering document search powered by multi-agent orchestration, graph knowledge, and advanced OCR
+                <p className="text-base md:text-lg text-white/50 max-w-xl mx-auto">
+                  Discover insights across documents, relationships, and timelines
                 </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 mt-5 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-white/50">
+                  <Sparkles className="h-3.5 w-3.5 text-purple-400/70" />
+                  Semantic • Graph • Timeline
+                </div>
               </div>
 
               {/* Search bar */}
-              <div className="w-full max-w-2xl animate-fade-in-delay">
-                <GlowBorder>
-                  <div className="relative flex items-center">
-                    <Search className="absolute left-4 h-5 w-5 text-white/20 z-10" />
-                    <input
-                      ref={heroInputRef}
-                      type="text"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleSearch() }}
-                      placeholder="Ask anything about engineering documents..."
-                      className="w-full h-14 md:h-16 text-sm md:text-base pl-12 pr-28 bg-slate-900/80 border border-white/[0.08] text-white placeholder:text-white/20 rounded-2xl backdrop-blur-xl outline-none focus:border-blue-500/30 transition-colors"
-                    />
-                    <Button
-                      onClick={() => handleSearch()}
-                      disabled={!query.trim() || isSearching}
-                      className="absolute right-2 h-10 px-5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium rounded-xl text-sm"
-                    >
-                      Search
-                    </Button>
-                  </div>
-                </GlowBorder>
+              <div className="w-full max-w-3xl animate-fade-in-delay">
+                <div className="relative flex items-center rounded-2xl bg-slate-800/60 border border-white/[0.08] backdrop-blur-xl shadow-xl shadow-black/20 transition-all focus-within:border-blue-500/30 focus-within:shadow-blue-500/5">
+                  <Search className="absolute left-5 h-5 w-5 text-white/25" />
+                  <input
+                    ref={heroInputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSearch() }}
+                    placeholder="What knowledge are you seeking?"
+                    className="w-full h-14 md:h-16 text-sm md:text-base pl-14 pr-28 bg-transparent text-white placeholder:text-white/25 rounded-2xl outline-none"
+                  />
+                  <Button
+                    onClick={() => handleSearch()}
+                    disabled={!query.trim() || isSearching}
+                    className="absolute right-2.5 h-10 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium rounded-xl text-sm shadow-lg"
+                  >
+                    Search
+                  </Button>
+                </div>
                 <div className="flex items-center justify-center gap-3 mt-3">
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -333,17 +328,17 @@ export function HomeSearch() {
               </div>
 
               {/* Example queries */}
-              <div className="w-full max-w-3xl space-y-3 animate-fade-in-delay-2">
-                <p className="text-center text-[11px] text-white/20 uppercase tracking-wider">Try asking</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="w-full max-w-4xl space-y-3 animate-fade-in-delay-2">
+                <p className="text-center text-xs text-white/25">Try asking:</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   {exampleQueries.map((q, i) => (
                     <button
                       key={i}
                       onClick={() => { setQuery(q); handleSearch(q) }}
-                      className="group p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl text-left hover:bg-white/[0.04] hover:border-white/[0.1] transition-all text-xs text-white/40 hover:text-white/60"
+                      className="group flex items-start gap-3 p-3.5 bg-white/[0.02] border border-white/[0.06] rounded-xl text-left hover:bg-white/[0.05] hover:border-white/[0.12] transition-all"
                     >
-                      <span className="text-white/15 mr-2">→</span>
-                      {q}
+                      <FileText className="h-4 w-4 text-white/15 shrink-0 mt-0.5 group-hover:text-blue-400/50 transition-colors" />
+                      <span className="text-xs text-white/40 group-hover:text-white/60 transition-colors leading-relaxed">{q}</span>
                     </button>
                   ))}
                 </div>
